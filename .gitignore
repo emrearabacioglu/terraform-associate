@@ -1,0 +1,19 @@
+# Provider binaries and modules
+.terraform/
+
+# States and backups
+*.tfstate
+*.tfstate.*
+
+# plans
+*.tfplan
+
+# crash log
+crash.log
+crash.*.log
+
+# overrides
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json

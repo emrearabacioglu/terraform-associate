@@ -1,94 +1,82 @@
-# Static configuration with repetitive elements
-resource "aws_vpc" "main" {
-  cidr_block           = "10.0.0.0/16"
-  enable_dns_hostnames = true
-  enable_dns_support   = true
+# Get information about the current region
+data "aws_region" "current" {}
 
-  tags = {
-    Name        = "production-vpc-us-east-1"
-    Environment = "production"
+data "aws_availability_zones" "available" {
+  state = "available"
+}
+
+locals {
+  name_prefix = var.environment
+  common_tags = {
+    Environment = var.environment
     Project     = "terraform-demo"
     Owner       = "infrastructure-team"
     CostCenter  = "cc-1234"
-    Region      = "us-east-1"
+    Region      = data.aws_region.current.region
     ManagedBy   = "terraform"
   }
+}
+
+resource "aws_vpc" "main" {
+  cidr_block           = var.cidr_block
+  enable_dns_hostnames = true
+  enable_dns_support   = true
+
+  tags = merge(local.common_tags, {
+    Name = "${local.name_prefix}-vpc-${data.aws_region.current.region}"
+  })
 }
 
 resource "aws_subnet" "public_a" {
   vpc_id                  = aws_vpc.main.id
-  cidr_block              = "10.0.1.0/24"
-  availability_zone       = "us-east-1a"
+  cidr_block              = cidrsubnet(var.cidr_block, 8, 0)
+  availability_zone       = data.aws_availability_zones.available.names[0]
   map_public_ip_on_launch = true
 
-  tags = {
-    Name        = "production-public-subnet-us-east-1a"
-    Environment = "production"
-    Project     = "terraform-demo"
-    Owner       = "infrastructure-team"
-    CostCenter  = "cc-1234"
-    Region      = "us-east-1"
-    ManagedBy   = "terraform"
-    Tier        = "public"
-  }
+  tags = merge(local.common_tags, {
+    Name = "${local.name_prefix}-public-subnet-${data.aws_availability_zones.available.names[0]}"
+    Tier = "public"
+  })
 }
 
 resource "aws_subnet" "public_b" {
   vpc_id                  = aws_vpc.main.id
-  cidr_block              = "10.0.2.0/24"
-  availability_zone       = "us-east-1b"
+  cidr_block              = cidrsubnet(var.cidr_block, 8, 1)
+  availability_zone       = data.aws_availability_zones.available.names[1]
   map_public_ip_on_launch = true
 
-  tags = {
-    Name        = "production-public-subnet-us-east-1b"
-    Environment = "production"
-    Project     = "terraform-demo"
-    Owner       = "infrastructure-team"
-    CostCenter  = "cc-1234"
-    Region      = "us-east-1"
-    ManagedBy   = "terraform"
-    Tier        = "public"
-  }
+  tags = merge(local.common_tags, {
+    Name = "${local.name_prefix}-public-subnet-${data.aws_availability_zones.available.names[1]}"
+    Tier = "public"
+  })
 }
 
 resource "aws_subnet" "private_a" {
   vpc_id                  = aws_vpc.main.id
-  cidr_block              = "10.0.3.0/24"
-  availability_zone       = "us-east-1a"
+  cidr_block              = cidrsubnet(var.cidr_block, 8, 2)
+  availability_zone       = data.aws_availability_zones.available.names[0]
   map_public_ip_on_launch = false
 
-  tags = {
-    Name        = "production-private-subnet-us-east-1a"
-    Environment = "production"
-    Project     = "terraform-demo"
-    Owner       = "infrastructure-team"
-    CostCenter  = "cc-1234"
-    Region      = "us-east-1"
-    ManagedBy   = "terraform"
-    Tier        = "private"
-  }
+  tags = merge(local.common_tags, {
+    Name = "${local.name_prefix}-private-subnet-${data.aws_availability_zones.available.names[0]}"
+    Tier = "private"
+  })
 }
 
 resource "aws_subnet" "private_b" {
   vpc_id                  = aws_vpc.main.id
-  cidr_block              = "10.0.4.0/24"
-  availability_zone       = "us-east-1b"
+  cidr_block              = cidrsubnet(var.cidr_block, 8, 3)
+  availability_zone       = data.aws_availability_zones.available.names[1]
   map_public_ip_on_launch = false
 
-  tags = {
-    Name        = "production-private-subnet-us-east-1b"
-    Environment = "production"
-    Project     = "terraform-demo"
-    Owner       = "infrastructure-team"
-    CostCenter  = "cc-1234"
-    Region      = "us-east-1"
-    ManagedBy   = "terraform"
-    Tier        = "private"
-  }
+  tags = merge(local.common_tags, {
+    Name = "${local.name_prefix}-private-subnet-${data.aws_availability_zones.available.names[1]}"
+    Tier = "private"
+  })
 }
 
 resource "aws_security_group" "web" {
-  name        = "production-web-sg"
+  name        = "${local.name_prefix}-web-sg"
   description = "Allow web traffic"
   vpc_id      = aws_vpc.main.id
 
@@ -113,13 +101,7 @@ resource "aws_security_group" "web" {
     cidr_blocks = ["0.0.0.0/0"]
   }
 
-  tags = {
-    Name        = "production-web-sg"
-    Environment = "production"
-    Project     = "terraform-demo"
-    Owner       = "infrastructure-team"
-    CostCenter  = "cc-1234"
-    Region      = "us-east-1"
-    ManagedBy   = "terraform"
-  }
+  tags = merge(local.common_tags, {
+    Name = "${local.name_prefix}-web-sg"
+  })
 }

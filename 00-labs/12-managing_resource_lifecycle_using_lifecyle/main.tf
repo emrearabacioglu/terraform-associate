@@ -15,6 +15,21 @@ resource "aws_s3_bucket" "standard" {
   }
 }
 
+# S3 Bucket with prevent_destroy
+resource "aws_s3_bucket" "protected" {
+  bucket = "protected-${var.environment}-${random_string.suffix.result}"
+
+  tags = {
+    Name        = "Protected Bucket"
+    Environment = var.environment
+  }
+
+  lifecycle {
+    prevent_destroy = false
+  }
+}
+
+
 # DynamoDB Table without lifecycle configuration
 resource "aws_dynamodb_table" "standard" {
   name         = "standard-${var.environment}-${random_string.suffix.result}"
@@ -31,3 +46,42 @@ resource "aws_dynamodb_table" "standard" {
     Environment = var.environment
   }
 }
+
+# DynamoDB Table with create_before_destroy
+resource "aws_dynamodb_table" "replacement" {
+  name         = "replacement-${var.environment}-${random_string.suffix.result}"
+  billing_mode = "PAY_PER_REQUEST"
+  hash_key     = "Id"
+
+  attribute {
+    name = "Id"
+    type = "S"
+  }
+
+  tags = {
+    Name        = "Replacement Table"
+    Environment = var.environment
+  }
+
+  lifecycle {
+    create_before_destroy = true
+  }
+}
+
+# SNS Topic with ignore_changes
+resource "aws_sns_topic" "updates" {
+  name = "updates-${var.environment}-${random_string.suffix.result}"
+
+  tags = {
+    Name        = "Updates Topic"
+    Environment = var.environment
+    Version     = "2.0.0"  # This will be ignored
+  }
+
+  lifecycle {
+    ignore_changes = [
+      tags["Version"]
+    ]
+  }
+}
+
